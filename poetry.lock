@@ -8469,13 +8469,13 @@ tqdm = "*"
 unidiff = "*"
 
 [package.extras]
-inference = ["anthropic", "flash-attn", "jedi", "openai", "peft", "protobuf", "sentencepiece", "tenacity", "tiktoken", "torch", "transformers", "triton"]
+inference = ["anthropic", "flash_attn", "jedi", "openai", "peft", "protobuf", "sentencepiece", "tenacity", "tiktoken", "torch", "transformers", "triton"]
 
 [package.source]
 type = "git"
-url = "https://github.com/All-Hands-AI/SWE-bench.git"
+url = "https://github.com/DevRL-Agent/SWE-Bench.git"
 reference = "HEAD"
-resolved_reference = "c807c112edc3dcb4fdf5ddac63b34706912d5cdb"
+resolved_reference = "c1f15036a6ee37f0915af8ab2da2d32114739570"
 
 [[package]]
 name = "sympy"
@@ -10109,4 +10109,4 @@ testing = ["coverage[toml]", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "2b268ef696ace0d8170276407dbdeb414134477839ebe4b7ecf29b1a1fe2cef3"
+content-hash = "793d4add995bc0bc48b02fff607a1d7bbb342d809be6d8f368c9adf44ae0e5f3"
