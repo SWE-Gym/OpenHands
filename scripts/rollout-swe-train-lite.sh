@@ -1,9 +1,9 @@
 #!/bin/bash
 
+MODEL=$1
 export EXP_NAME="train-t0"   # use this to differentiate between different runs
-MODEL="llm.deepseek-coder-jiayi"  # change this based on your config.toml
-DATASET="swe-train/swe-train-dev-v1"
-SPLIT="train.v1.success"
+DATASET="swe-train/swe-train-dev-v1-lite"
+SPLIT="train.v2.success"
 N_RUNS=1
 
 if [ -z "$ALLHANDS_API_KEY" ]; then
