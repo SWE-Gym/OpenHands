@@ -2,6 +2,7 @@
 
 MODEL=$1
 EXP_NAME=$2 # "train-t0"
+export EXP_NAME=$EXP_NAME
 echo "MODEL: $MODEL"
 echo "EXP_NAME: $EXP_NAME"
 DATASET="swe-train/swe-train-dev-v1-lite"
