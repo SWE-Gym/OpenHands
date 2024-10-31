@@ -1,7 +1,9 @@
 #!/bin/bash
 
 MODEL=$1
-export EXP_NAME="train-t0"   # use this to differentiate between different runs
+EXP_NAME=$2 # "train-t0"
+echo "MODEL: $MODEL"
+echo "EXP_NAME: $EXP_NAME"
 DATASET="swe-train/swe-train-dev-v1-lite"
 SPLIT="train.v2.success"
 N_RUNS=1
