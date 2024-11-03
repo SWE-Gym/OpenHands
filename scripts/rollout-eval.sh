@@ -1,9 +1,9 @@
 #!/bin/bash
 
 export EXP_NAME="t0"  # use this to differentiate between different runs
-MODEL="llm.deepseek-coder-eval-t0"  # change this based on your config.toml
-DATASET="princeton-nlp/SWE-bench_Lite"
-SPLIT="test"
+MODEL=$1
+DATASET="swe-train/SWE-bench_lite"
+SPLIT="test100"
 N_RUNS=1
 
 if [ -z "$ALLHANDS_API_KEY" ]; then
@@ -20,7 +20,4 @@ EVAL_LIMIT=300
 MAX_ITER=30
 NUM_WORKERS=64
 
-./evaluation/swe_bench/scripts/run_infer.sh \
-    $MODEL HEAD CodeActAgent \
-    $EVAL_LIMIT $MAX_ITER $NUM_WORKERS \
-    $DATASET $SPLIT $N_RUNS
+./evaluation/swe_bench/scripts/run_infer.sh $MODEL HEAD CodeActAgent $EVAL_LIMIT $MAX_ITER $NUM_WORKERS $DATASET $SPLIT
