@@ -438,6 +438,7 @@ def convert_non_fncall_messages_to_fncall_messages(
 
 def convert_from_multiple_tool_calls_to_single_tool_call_messages(
     messages: list[dict],
+    ignore_final_tool_result: bool = False,
 ) -> list[dict]:
     """Break one message with multiple tool calls into multiple messages."""
     converted_messages = []
@@ -474,7 +475,7 @@ def convert_from_multiple_tool_calls_to_single_tool_call_messages(
             ), f'Found pending tool calls but not expect to handle it with role {role}: {pending_tool_calls=}, {message=}'
             converted_messages.append(message)
 
-    if len(pending_tool_calls) > 0:
+    if not ignore_final_tool_result and len(pending_tool_calls) > 0:
         raise FunctionCallConversionError(
             f'Found pending tool calls but no tool result: {pending_tool_calls=}'
         )
