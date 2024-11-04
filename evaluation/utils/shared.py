@@ -315,9 +315,11 @@ def _process_instance_wrapper(
                 + '-' * 10
             )
             logger.exception(e)
-            raise RuntimeError(
-                f'Maximum timeout retries reached for instance {instance.instance_id}'
-            ) from e
+            return EvalOutput(
+                instance_id=instance.instance_id,
+                test_result={},
+                error=error,
+            )
         except Exception as e:
             error = str(e)
             stacktrace = traceback.format_exc()
