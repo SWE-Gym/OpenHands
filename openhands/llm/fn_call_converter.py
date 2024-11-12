@@ -307,6 +307,7 @@ def convert_tools_to_description(tools: list[dict]) -> str:
 def convert_fncall_messages_to_non_fncall_messages(
     messages: list[dict],
     tools: list[ChatCompletionToolParam],
+    add_in_context_learning_example: bool = True,
 ) -> list[dict]:
     """Convert function calling messages to non-function calling messages."""
     messages = copy.deepcopy(messages)
@@ -341,7 +342,7 @@ def convert_fncall_messages_to_non_fncall_messages(
         # 2. USER MESSAGES (no change)
         elif role == 'user':
             # Add in-context learning example for the first user message
-            if not first_user_message_encountered:
+            if not first_user_message_encountered and add_in_context_learning_example:
                 first_user_message_encountered = True
                 # Check tools
                 if not (
