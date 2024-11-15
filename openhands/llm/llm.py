@@ -121,7 +121,9 @@ class LLM(RetryMixin, DebugMixin):
             top_p=self.config.top_p,
             drop_params=self.config.drop_params,
         )
-
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            self.init_model_info()
         if self.vision_is_active():
             logger.debug('LLM: model has vision enabled')
         if self.is_caching_prompt_active():
@@ -142,16 +144,6 @@ class LLM(RetryMixin, DebugMixin):
             top_p=self.config.top_p,
             drop_params=self.config.drop_params,
         )
-
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore')
-            self.init_model_info()
-        if self.vision_is_active():
-            logger.debug('LLM: model has vision enabled')
-        if self.is_caching_prompt_active():
-            logger.debug('LLM: caching prompt enabled')
-        if self.is_function_calling_active():
-            logger.debug('LLM: model supports function calling')
 
         self._completion_unwrapped = self._completion
 
