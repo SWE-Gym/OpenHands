@@ -1,7 +1,6 @@
 import { useDispatch, useSelector } from "react-redux";
 import React from "react";
-import { useFetcher } from "@remix-run/react";
-import { useSocket } from "#/context/socket";
+import posthog from "posthog-js";
 import { convertImageToBase64 } from "#/utils/convert-image-to-base-64";
 import { ChatMessage } from "./chat-message";
 import { FeedbackActions } from "./feedback-actions";
@@ -13,27 +12,25 @@ import { RootState } from "#/store";
 import AgentState from "#/types/AgentState";
 import { generateAgentStateChangeEvent } from "#/services/agentStateService";
 import { FeedbackModal } from "./feedback-modal";
-import { Feedback } from "#/api/open-hands.types";
-import { getToken } from "#/services/auth";
-import { removeApiKey, removeUnwantedKeys } from "#/utils/utils";
-import { clientAction } from "#/routes/submit-feedback";
 import { useScrollToBottom } from "#/hooks/useScrollToBottom";
 import TypingIndicator from "./chat/TypingIndicator";
 import ConfirmationButtons from "./chat/ConfirmationButtons";
 import { ErrorMessage } from "./error-message";
 import { ContinueButton } from "./continue-button";
 import { ScrollToBottomButton } from "./scroll-to-bottom-button";
-
-const FEEDBACK_VERSION = "1.0";
+import { Suggestions } from "./suggestions";
+import { SUGGESTIONS } from "#/utils/suggestions";
+import BuildIt from "#/icons/build-it.svg?react";
+import { useWsClient } from "#/context/ws-client-provider";
 
 const isErrorMessage = (
   message: Message | ErrorMessage,
 ): message is ErrorMessage => "error" in message;
 
 export function ChatInterface() {
-  const { send, events } = useSocket();
+  const { send, isLoadingMessages } = useWsClient();
+
   const dispatch = useDispatch();
-  const fetcher = useFetcher<typeof clientAction>({ key: "feedback" });
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const { scrollDomToBottom, onChatBodyScroll, hitBottom } =
     useScrollToBottom(scrollRef);
@@ -44,19 +41,24 @@ export function ChatInterface() {
   const [feedbackPolarity, setFeedbackPolarity] = React.useState<
     "positive" | "negative"
   >("positive");
-  const [feedbackShared, setFeedbackShared] = React.useState(0);
   const [feedbackModalIsOpen, setFeedbackModalIsOpen] = React.useState(false);
+  const [messageToSend, setMessageToSend] = React.useState<string | null>(null);
 
   const handleSendMessage = async (content: string, files: File[]) => {
+    posthog.capture("user_message_sent", {
+      current_message_count: messages.length,
+    });
     const promises = files.map((file) => convertImageToBase64(file));
     const imageUrls = await Promise.all(promises);
 
     const timestamp = new Date().toISOString();
     dispatch(addUserMessage({ content, imageUrls, timestamp }));
     send(createChatMessage(content, imageUrls, timestamp));
+    setMessageToSend(null);
   };
 
   const handleStop = () => {
+    posthog.capture("stop_button_clicked");
     send(generateAgentStateChangeEvent(AgentState.STOPPED));
   };
 
@@ -71,75 +73,77 @@ export function ChatInterface() {
     setFeedbackPolarity(polarity);
   };
 
-  const handleSubmitFeedback = (
-    permissions: "private" | "public",
-    email: string,
-  ) => {
-    const feedback: Feedback = {
-      version: FEEDBACK_VERSION,
-      feedback: feedbackPolarity,
-      email,
-      permissions,
-      token: getToken(),
-      trajectory: removeApiKey(removeUnwantedKeys(events)),
-    };
-
-    const formData = new FormData();
-    formData.append("feedback", JSON.stringify(feedback));
-
-    fetcher.submit(formData, {
-      action: "/submit-feedback",
-      method: "POST",
-    });
-
-    setFeedbackShared(messages.length);
-  };
-
   return (
     <div className="h-full flex flex-col justify-between">
+      {messages.length === 0 && (
+        <div className="flex flex-col gap-6 h-full px-4 items-center justify-center">
+          <div className="flex flex-col items-center p-4 bg-neutral-700 rounded-xl w-full">
+            <BuildIt width={45} height={54} />
+            <span className="font-semibold text-[20px] leading-6 -tracking-[0.01em] gap-1">
+              Let&apos;s start building!
+            </span>
+          </div>
+          <Suggestions
+            suggestions={Object.entries(SUGGESTIONS.repo)
+              .slice(0, 4)
+              .map(([label, value]) => ({
+                label,
+                value,
+              }))}
+            onSuggestionClick={(value) => {
+              setMessageToSend(value);
+            }}
+          />
+        </div>
+      )}
+
       <div
         ref={scrollRef}
         onScroll={(e) => onChatBodyScroll(e.currentTarget)}
         className="flex flex-col grow overflow-y-auto overflow-x-hidden px-4 pt-4 gap-2"
       >
-        {messages.map((message, index) =>
-          isErrorMessage(message) ? (
-            <ErrorMessage
-              key={index}
-              error={message.error}
-              message={message.message}
-            />
-          ) : (
-            <ChatMessage
-              key={index}
-              type={message.sender}
-              message={message.content}
-            >
-              {message.imageUrls.length > 0 && (
-                <ImageCarousel size="small" images={message.imageUrls} />
-              )}
-              {messages.length - 1 === index &&
-                message.sender === "assistant" &&
-                curAgentState === AgentState.AWAITING_USER_CONFIRMATION && (
-                  <ConfirmationButtons />
-                )}
-            </ChatMessage>
-          ),
+        {isLoadingMessages && (
+          <div className="flex justify-center">
+            <div className="w-6 h-6 border-2 border-t-[4px] border-primary-500 rounded-full animate-spin" />
+          </div>
         )}
+        {!isLoadingMessages &&
+          messages.map((message, index) =>
+            isErrorMessage(message) ? (
+              <ErrorMessage
+                key={index}
+                id={message.id}
+                message={message.message}
+              />
+            ) : (
+              <ChatMessage
+                key={index}
+                type={message.sender}
+                message={message.content}
+              >
+                {message.imageUrls.length > 0 && (
+                  <ImageCarousel size="small" images={message.imageUrls} />
+                )}
+                {messages.length - 1 === index &&
+                  message.sender === "assistant" &&
+                  curAgentState === AgentState.AWAITING_USER_CONFIRMATION && (
+                    <ConfirmationButtons />
+                  )}
+              </ChatMessage>
+            ),
+          )}
       </div>
 
       <div className="flex flex-col gap-[6px] px-4 pb-4">
         <div className="flex justify-between relative">
-          {feedbackShared !== messages.length && messages.length > 3 && (
-            <FeedbackActions
-              onPositiveFeedback={() =>
-                onClickShareFeedbackActionButton("positive")
-              }
-              onNegativeFeedback={() =>
-                onClickShareFeedbackActionButton("negative")
-              }
-            />
-          )}
+          <FeedbackActions
+            onPositiveFeedback={() =>
+              onClickShareFeedbackActionButton("positive")
+            }
+            onNegativeFeedback={() =>
+              onClickShareFeedbackActionButton("negative")
+            }
+          />
           <div className="absolute left-1/2 transform -translate-x-1/2 bottom-0">
             {messages.length > 2 &&
               curAgentState === AgentState.AWAITING_USER_INPUT && (
@@ -158,14 +162,15 @@ export function ChatInterface() {
             curAgentState === AgentState.AWAITING_USER_CONFIRMATION
           }
           mode={curAgentState === AgentState.RUNNING ? "stop" : "submit"}
+          value={messageToSend ?? undefined}
+          onChange={setMessageToSend}
         />
       </div>
 
       <FeedbackModal
         isOpen={feedbackModalIsOpen}
-        isSubmitting={fetcher.state === "submitting"}
         onClose={() => setFeedbackModalIsOpen(false)}
-        onSubmit={handleSubmitFeedback}
+        polarity={feedbackPolarity}
       />
     </div>
   );
