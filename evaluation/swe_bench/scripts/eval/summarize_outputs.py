@@ -192,7 +192,7 @@ if __name__ == '__main__':
 
         df = df.sort_values('resolve_rate', ascending=False)
 
-        print('\nResults summary (sorted by resolve rate):')
+        # Create the summary string
         columns = [
             'directory',
             'resolve_rate',
@@ -203,22 +203,25 @@ if __name__ == '__main__':
             'avg_cost',
             'total_instances',
         ]
-
-        # Set display options for pandas
-        pd.set_option('display.width', 0)  # Auto-detect terminal width
-        pd.set_option('display.max_rows', None)  # Show all rows
-
-        # Use formatters and max_colwidth in to_string
-        print(
-            df[columns].to_string(
-                float_format=lambda x: '{:.2f}'.format(x),
-                formatters={
-                    'directory': lambda x: x[:90]
-                },  # Truncate directory names to 20 chars
-                index=False,
-            )
+        summary_str = df[columns].to_string(
+            float_format=lambda x: '{:.2f}'.format(x),
+            formatters={
+                'directory': lambda x: x[:90]
+            },  # Truncate directory names to 20 chars
+            index=False,
         )
 
+        # Print to console
+        print('\nResults summary (sorted by resolve rate):')
+        print(summary_str)
+
+        # Save to text file
+        txt_output = args.output.rsplit('.', 1)[0] + '.txt'
+        with open(txt_output, 'w') as f:
+            f.write('Results summary (sorted by resolve rate):\n')
+            f.write(summary_str)
+
+        # Save
         df.to_json(args.output, lines=True, orient='records')
     else:
         # Process single file with detailed output
