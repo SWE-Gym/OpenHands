@@ -17,7 +17,7 @@ export EVAL_DOCKER_IMAGE_PREFIX="us-central1-docker.pkg.dev/evaluation-092424/sw
 export EXP_NAME=$EXP_NAME
 
 EVAL_LIMIT=300
-MAX_ITER=50
+MAX_ITER=100
 NUM_WORKERS=64
 
 ./evaluation/swe_bench/scripts/run_infer.sh $MODEL HEAD CodeActAgent $EVAL_LIMIT $MAX_ITER $NUM_WORKERS $DATASET $SPLIT
