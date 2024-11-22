@@ -2,6 +2,7 @@
 
 export EXP_NAME="t0"  # use this to differentiate between different runs
 MODEL=$1
+NUM_WORKERS=${2:-64}
 DATASET="swe-train/SWE-bench_lite"
 SPLIT="test100"
 N_RUNS=1
@@ -18,6 +19,5 @@ export EXP_NAME=$EXP_NAME
 
 EVAL_LIMIT=300
 MAX_ITER=100
-NUM_WORKERS=64
 
 ./evaluation/swe_bench/scripts/run_infer.sh $MODEL HEAD CodeActAgent $EVAL_LIMIT $MAX_ITER $NUM_WORKERS $DATASET $SPLIT
