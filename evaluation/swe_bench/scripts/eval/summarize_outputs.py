@@ -14,6 +14,7 @@ ERROR_KEYWORDS = [
     'Agent encountered an error while processing the last action',
     'APIError',
     'Action execution failed',
+    'litellm.Timeout: APITimeoutError',
 ]
 
 
@@ -223,6 +224,7 @@ if __name__ == '__main__':
 
         # Save
         df.to_json(args.output, lines=True, orient='records')
+        df[columns].to_csv(args.output.rsplit('.', 1)[0] + '.csv', index=False)
     else:
         # Process single file with detailed output
         try:
