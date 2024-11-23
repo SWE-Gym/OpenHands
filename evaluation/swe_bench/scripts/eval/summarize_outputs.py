@@ -141,6 +141,46 @@ def process_file(file_path):
     }
 
 
+def aggregate_directory(input_path) -> pd.DataFrame:
+    # Process all output.jsonl files in subdirectories
+    pattern = os.path.join(input_path, '**/output.jsonl')
+    files = glob.glob(pattern, recursive=True)
+    print(f'Processing {len(files)} files from directory {input_path}')
+
+    # Process each file silently and collect results
+    for file_path in files:
+        try:
+            result = process_file(file_path)
+            results.append(result)
+        except Exception as e:
+            print(f'Error processing {file_path}: {str(e)}')
+            import traceback
+
+            traceback.print_exc()
+            continue
+
+    print(f'Results written to {args.output}')
+
+    # Convert results to pandas DataFrame and sort by resolve rate
+    df = pd.DataFrame(results)
+
+    # Extract directory name from file path
+    df['directory'] = df['file_path'].apply(
+        lambda x: os.path.basename(os.path.dirname(x))
+    )
+
+    df['resolve_rate'] = df['resolved'].apply(lambda x: x['percentage'])
+    df['empty_patch_rate'] = df['empty_patches'].apply(lambda x: x['percentage'])
+    df['unfinished_rate'] = df['unfinished_runs'].apply(lambda x: x['percentage'])
+    df['avg_turns'] = df['statistics'].apply(lambda x: x['avg_turns'])
+    df['error_rate'] = df['errors'].apply(lambda x: x['percentage'])
+    df['avg_cost'] = df['statistics'].apply(lambda x: x['costs']['total'])
+
+    df = df.sort_values('resolve_rate', ascending=False)
+
+    return df
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -157,42 +197,7 @@ if __name__ == '__main__':
     results = []
 
     if os.path.isdir(args.input_path):
-        # Process all output.jsonl files in subdirectories
-        pattern = os.path.join(args.input_path, '**/output.jsonl')
-        files = glob.glob(pattern, recursive=True)
-        print(f'Processing {len(files)} files from directory {args.input_path}')
-
-        # Process each file silently and collect results
-        for file_path in files:
-            try:
-                result = process_file(file_path)
-                results.append(result)
-            except Exception as e:
-                print(f'Error processing {file_path}: {str(e)}')
-                import traceback
-
-                traceback.print_exc()
-                continue
-
-        print(f'Results written to {args.output}')
-
-        # Convert results to pandas DataFrame and sort by resolve rate
-        df = pd.DataFrame(results)
-
-        # Extract directory name from file path
-        df['directory'] = df['file_path'].apply(
-            lambda x: os.path.basename(os.path.dirname(x))
-        )
-
-        df['resolve_rate'] = df['resolved'].apply(lambda x: x['percentage'])
-        df['empty_patch_rate'] = df['empty_patches'].apply(lambda x: x['percentage'])
-        df['unfinished_rate'] = df['unfinished_runs'].apply(lambda x: x['percentage'])
-        df['avg_turns'] = df['statistics'].apply(lambda x: x['avg_turns'])
-        df['error_rate'] = df['errors'].apply(lambda x: x['percentage'])
-        df['avg_cost'] = df['statistics'].apply(lambda x: x['costs']['total'])
-
-        df = df.sort_values('resolve_rate', ascending=False)
-
+        df = aggregate_directory(args.input_path)
         # Create the summary string
         columns = [
             'directory',
