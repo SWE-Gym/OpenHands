@@ -148,6 +148,7 @@ def aggregate_directory(input_path) -> pd.DataFrame:
     print(f'Processing {len(files)} files from directory {input_path}')
 
     # Process each file silently and collect results
+    results = []
     for file_path in files:
         try:
             result = process_file(file_path)
@@ -158,8 +159,6 @@ def aggregate_directory(input_path) -> pd.DataFrame:
 
             traceback.print_exc()
             continue
-
-    print(f'Results written to {args.output}')
 
     # Convert results to pandas DataFrame and sort by resolve rate
     df = pd.DataFrame(results)
@@ -193,8 +192,6 @@ if __name__ == '__main__':
         default='summary_results.jsonl',
     )
     args = parser.parse_args()
-
-    results = []
 
     if os.path.isdir(args.input_path):
         df = aggregate_directory(args.input_path)
@@ -232,6 +229,7 @@ if __name__ == '__main__':
         df[columns].to_csv(args.output.rsplit('.', 1)[0] + '.csv', index=False)
     else:
         # Process single file with detailed output
+        results = []
         try:
             result = process_file(args.input_path)
             results.append(result)
