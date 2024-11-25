@@ -2,7 +2,7 @@
 
 OUTPUT_FILE=$1
 NUM_WORKERS=${2:-64}
-DATASET="princeton-nlp/SWE-bench_Lite"
+DATASET="princeton-nlp/SWE-bench_Verified"
 SPLIT="test"
 
 if [ -z "$ALLHANDS_API_KEY" ]; then
