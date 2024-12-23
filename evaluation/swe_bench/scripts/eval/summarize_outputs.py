@@ -3,11 +3,11 @@ import argparse
 import glob
 import json
 import os
+import random
 from collections import Counter
 
-import pandas as pd
-import random
 import numpy as np
+import pandas as pd
 
 from openhands.events.serialization import event_from_dict
 from openhands.events.utils import get_pairs_from_events
@@ -20,13 +20,12 @@ ERROR_KEYWORDS = [
 ]
 
 
-def get_bootstrap_accuracy_std(values: float | int | bool, num_samples: int = 1000) -> float:
+def get_bootstrap_accuracy_std(
+    values: float | int | bool, num_samples: int = 1000
+) -> float:
     # Borrow from https://github.com/openai/evals/blob/cdb8ce9547e68b8e5e4520b6a162294c06865c0f/evals/metrics.py#L21
     return np.std(
-        [
-            np.mean(random.sample(values, len(values) // 2))
-            for _ in range(num_samples)
-        ]
+        [np.mean(random.sample(values, len(values) // 2)) for _ in range(num_samples)]
     )
 
 

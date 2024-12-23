@@ -407,7 +407,11 @@ if __name__ == '__main__':
     fields = ['resolved', 'failed_apply_patch', 'error_eval', 'empty_generation']
 
     def count_report_field(row, field):
-        return row['test_result']['report'][field]
+        return (
+            row['test_result']['report'][field]
+            if 'report' in row['test_result']
+            else False
+        )
 
     report = {}
     for field in fields:

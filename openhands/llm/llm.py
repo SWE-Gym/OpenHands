@@ -186,7 +186,9 @@ class LLM(RetryMixin, DebugMixin):
                     'tools' in kwargs
                 ), "'tools' must be in kwargs when mock_function_calling is True"
                 messages = convert_fncall_messages_to_non_fncall_messages(
-                    messages, kwargs['tools']
+                    messages,
+                    kwargs['tools'],
+                    add_in_context_learning_example=self.config.nonfncall_mode_add_in_context_learning_example,
                 )
                 kwargs['messages'] = messages
                 kwargs['stop'] = STOP_WORDS

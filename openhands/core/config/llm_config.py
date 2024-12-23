@@ -77,6 +77,7 @@ class LLMConfig:
     log_completions: bool = False
     log_completions_folder: str = os.path.join(LOG_DIR, 'completions')
     draft_editor: Optional['LLMConfig'] = None
+    nonfncall_mode_add_in_context_learning_example: bool = True
 
     def defaults_to_dict(self) -> dict:
         """Serialize fields to a dict for the frontend, including type hints, defaults, and whether it's optional."""
