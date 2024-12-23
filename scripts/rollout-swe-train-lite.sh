@@ -5,8 +5,8 @@ EXP_NAME=$2 # "train-t0"
 export EXP_NAME=$EXP_NAME
 echo "MODEL: $MODEL"
 echo "EXP_NAME: $EXP_NAME"
-DATASET="swe-train/swe-train-dev-v1-lite"
-SPLIT="train.v2.success"
+DATASET="SWE-Gym/SWE-Gym-Lite"
+SPLIT="train"
 N_RUNS=1
 
 if [ -z "$ALLHANDS_API_KEY" ]; then

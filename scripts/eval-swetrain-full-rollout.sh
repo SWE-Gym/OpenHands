@@ -2,8 +2,8 @@
 
 OUTPUT_FILE=$1
 NUM_WORKERS=$2
-DATASET="swe-train/swe-train-dev-v1"
-SPLIT="train.v2.success"
+DATASET="SWE-Gym/SWE-Gym"
+SPLIT="train"
 
 if [ -z "$ALLHANDS_API_KEY" ]; then
     echo "ALLHANDS_API_KEY is not set. Please set it and run the script again."
