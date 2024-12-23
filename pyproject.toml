@@ -132,7 +132,7 @@ streamlit = "*"
 whatthepatch = "*"
 retry = "*"
 evaluate = "*"
-swebench = { git = "https://github.com/DevRL-Agent/SWE-Bench.git" }
+swebench = { git = "https://github.com/SWE-Gym/SWE-Bench-Fork.git" }
 func_timeout = "*"
 sympy = "*"
 gdown = "*"

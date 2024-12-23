@@ -8571,9 +8571,9 @@ inference = ["anthropic", "flash_attn", "jedi", "openai", "peft", "protobuf", "s
 
 [package.source]
 type = "git"
-url = "https://github.com/DevRL-Agent/SWE-Bench.git"
+url = "https://github.com/SWE-Gym/SWE-Bench-Fork.git"
 reference = "HEAD"
-resolved_reference = "c1f15036a6ee37f0915af8ab2da2d32114739570"
+resolved_reference = "e440817248cf29bee71ca9ab3c3a762177ab8f7c"
 
 [[package]]
 name = "sympy"
@@ -10211,4 +10211,4 @@ testing = ["coverage[toml]", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "42d1414d8f6db6a4040c07b3ba8da850ed4fdbfd8e5cae0d55598216b309fbe2"
+content-hash = "6c58d155c879a1469ba187666f010e13ec50e3a5c85c9461f3316878d0019074"
