@@ -108,7 +108,10 @@ elif os.path.exists(openhands_remote_report_jsonl):
     ), 'There are duplicate instance ids in the eval report which is not allowed'
 
     for _, row in df_eval.iterrows():
-        instance_id_to_status[row['instance_id']] = row['test_result']['report']
+        if 'report' in row['test_result']:
+            instance_id_to_status[row['instance_id']] = row['test_result']['report']
+        else:
+            instance_id_to_status[row['instance_id']] = {}
     df['report'] = df.apply(apply_report, axis=1)
 
     _n_instances = len(df)

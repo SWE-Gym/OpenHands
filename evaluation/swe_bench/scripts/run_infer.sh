@@ -108,7 +108,13 @@ if [ -z "$N_RUNS" ]; then
   echo "N_RUNS not specified, use default $N_RUNS"
 fi
 
+# SKIP_RUNS is a comma-separated list of run numbers to skip
 for i in $(seq 1 $N_RUNS); do
+  # skip if i in SKIP_RUNS
+  if [[ "$SKIP_RUNS" == *"$i"* ]]; then
+    continue
+  fi
+
   current_eval_note="$EVAL_NOTE-run_$i"
   echo "EVAL_NOTE: $current_eval_note"
   run_eval $current_eval_note

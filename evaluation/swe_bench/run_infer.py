@@ -32,7 +32,7 @@ from openhands.core.config import (
 )
 from openhands.core.logger import openhands_logger as logger
 from openhands.core.main import create_runtime, run_controller
-from openhands.events.action import CmdRunAction, MessageAction
+from openhands.events.action import CmdRunAction, IPythonRunCellAction, MessageAction
 from openhands.events.observation import CmdOutputObservation, ErrorObservation
 from openhands.events.serialization.event import event_to_dict
 from openhands.runtime.base import Runtime
@@ -145,7 +145,7 @@ def get_config(
             platform='linux/amd64',
             api_key=os.environ.get('ALLHANDS_API_KEY', None),
             remote_runtime_api_url=os.environ.get('SANDBOX_REMOTE_RUNTIME_API_URL'),
-            keep_remote_runtime_alive=False,
+            keep_runtime_alive=False,
             remote_runtime_init_timeout=3600,
         ),
         # do not mount workspace
@@ -303,6 +303,7 @@ def initialize_runtime(
 def complete_runtime(
     runtime: Runtime,
     instance: pd.Series,  # this argument is not required, but it is used to get the workspace_dir_name
+    n_retries: int = 5,
 ) -> dict[str, Any]:
     """Complete the runtime for the agent.
 
@@ -321,55 +322,84 @@ def complete_runtime(
     logger.info(action, extra={'msg_type': 'ACTION'})
     obs = runtime.run_action(action)
     logger.info(obs, extra={'msg_type': 'OBSERVATION'})
-    assert_and_raise(
-        isinstance(obs, CmdOutputObservation) and obs.exit_code == 0,
-        f'Failed to cd to /workspace/{workspace_dir_name}: {str(obs)}',
-    )
 
-    action = CmdRunAction(command='git config --global core.pager ""')
-    action.timeout = 600
-    logger.info(action, extra={'msg_type': 'ACTION'})
-    obs = runtime.run_action(action)
-    logger.info(obs, extra={'msg_type': 'OBSERVATION'})
-    assert_and_raise(
-        isinstance(obs, CmdOutputObservation) and obs.exit_code == 0,
-        f'Failed to git config --global core.pager "": {str(obs)}',
-    )
-
-    action = CmdRunAction(command='git add -A')
-    action.timeout = 600
-    logger.info(action, extra={'msg_type': 'ACTION'})
-    obs = runtime.run_action(action)
-    logger.info(obs, extra={'msg_type': 'OBSERVATION'})
-    assert_and_raise(
-        isinstance(obs, CmdOutputObservation) and obs.exit_code == 0,
-        f'Failed to git add -A: {str(obs)}',
-    )
-
-    n_retries = 0
-    git_patch = None
-    while n_retries < 5:
-        action = CmdRunAction(
-            command=f'git diff --no-color --cached {instance["base_commit"]}',
-            keep_prompt=False,
-        )
-        action.timeout = 600 + 100 * n_retries
+    if isinstance(obs, CmdOutputObservation) and obs.exit_code == 0:
+        action = CmdRunAction(command='git config --global core.pager ""')
+        action.timeout = 600
         logger.info(action, extra={'msg_type': 'ACTION'})
         obs = runtime.run_action(action)
         logger.info(obs, extra={'msg_type': 'OBSERVATION'})
-        n_retries += 1
-        if isinstance(obs, CmdOutputObservation):
-            if obs.exit_code == 0:
-                git_patch = obs.content.strip()
-                break
-            else:
-                logger.info('Failed to get git diff, retrying...')
+        assert_and_raise(
+            isinstance(obs, CmdOutputObservation) and obs.exit_code == 0,
+            f'Failed to git config --global core.pager "": {str(obs)}',
+        )
+
+        action = CmdRunAction(command='git add -A')
+        action.timeout = 600
+        logger.info(action, extra={'msg_type': 'ACTION'})
+        obs = runtime.run_action(action)
+        logger.info(obs, extra={'msg_type': 'OBSERVATION'})
+        assert_and_raise(
+            isinstance(obs, CmdOutputObservation) and obs.exit_code == 0,
+            f'Failed to git add -A: {str(obs)}',
+        )
+
+        n_retries = 0
+        git_patch = None
+        while n_retries < 5:
+            action = CmdRunAction(
+                command=f'git diff --no-color --cached {instance["base_commit"]}',
+                keep_prompt=False,
+            )
+            action.timeout = 600 + 100 * n_retries
+            logger.info(action, extra={'msg_type': 'ACTION'})
+            obs = runtime.run_action(action)
+            logger.info(obs, extra={'msg_type': 'OBSERVATION'})
+            n_retries += 1
+            if isinstance(obs, CmdOutputObservation):
+                if obs.exit_code == 0:
+                    git_patch = obs.content.strip()
+                    break
+                else:
+                    logger.info('Failed to get git diff, retrying...')
+                    sleep_if_should_continue(10)
+            elif isinstance(obs, ErrorObservation):
+                logger.error(f'Error occurred: {obs.content}. Retrying...')
                 sleep_if_should_continue(10)
-        elif isinstance(obs, ErrorObservation):
-            logger.error(f'Error occurred: {obs.content}. Retrying...')
-            sleep_if_should_continue(10)
-        else:
-            assert_and_raise(False, f'Unexpected observation type: {str(obs)}')
+            else:
+                assert_and_raise(False, f'Unexpected observation type: {str(obs)}')
+    else:
+        logger.warning(
+            f'Failed to cd to /workspace/{workspace_dir_name}... Trying to use IPython to get git diff'
+        )
+        # Git configuration and diff using IPython
+        cell_code = f"""
+    import subprocess
+
+    def run_git_cmd(cmd):
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, cwd='/workspace/{workspace_dir_name}')
+        return result.stdout, result.returncode
+
+    # Configure git
+    run_git_cmd('git config --global core.pager ""')
+    run_git_cmd('git add -A')
+
+    # Get the diff
+    stdout, exit_code = run_git_cmd('git diff --no-color --cached {instance["base_commit"]}')
+    git_patch = stdout.strip()
+    """
+        action = IPythonRunCellAction(code=cell_code)
+        action.timeout = 600
+        logger.info(action, extra={'msg_type': 'ACTION'})
+        obs = runtime.run_action(action)
+        logger.info(obs, extra={'msg_type': 'OBSERVATION'})
+
+        # Get the git_patch from IPython's namespace
+        cell_code = 'print(git_patch)'
+        action = IPythonRunCellAction(code=cell_code)
+        action.timeout = 600
+        obs = runtime.run_action(action)
+        git_patch = obs.content.strip()
 
     assert_and_raise(git_patch is not None, 'Failed to get git diff (None)')
 
@@ -534,5 +564,10 @@ if __name__ == '__main__':
             instances[col] = instances[col].apply(lambda x: str(x))
 
     run_evaluation(
-        instances, metadata, output_file, args.eval_num_workers, process_instance
+        instances,
+        metadata,
+        output_file,
+        args.eval_num_workers,
+        process_instance,
+        timeout_seconds=120 * 60,  # 2 hour PER instance should be more than enough
     )
